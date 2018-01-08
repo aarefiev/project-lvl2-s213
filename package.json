@@ -35,7 +35,8 @@
   },
   "homepage": "https://github.com/aarefiev/project-lvl2-s213#readme",
   "dependencies": {
-    "commander": "*"
+    "commander": "*",
+    "lodash": "*"
   },
   "devDependencies": {
     "babel-cli": "*",
@@ -54,7 +55,7 @@
     "eslint-plugin-jest": "*",
     "flow-bin": "^0.57",
     "flow-typed": "*",
-    "jest": "^21",
+    "jest": "^22.0.4",
     "jest-cli": "*"
   }
 }
