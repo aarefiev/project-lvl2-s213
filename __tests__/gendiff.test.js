@@ -1,11 +1,20 @@
 // @flow
 
 import gendiff from '../src';
-import parser from '../src/parser';
+import Parser from '../src/parser';
+
+function ParserAdapter(adaptee) {
+  return {
+    getExtentions: function getExtentions() {
+      return Object.keys(adaptee.getData());
+    },
+  };
+}
 
 const preparePath = file => `./__tests__/__fixtures__/${file}`;
+const parserAdapter = new ParserAdapter(new Parser());
 
-Object.keys(parser.data).forEach((ext) => {
+parserAdapter.getExtentions().forEach((ext) => {
   describe(`diff for ${ext}`, () => {
     const empty = `empty.${ext}`;
     const file1 = `before.${ext}`;
@@ -13,30 +22,34 @@ Object.keys(parser.data).forEach((ext) => {
 
     it(`${file1} with ${empty}`, () => {
       const answerFile = preparePath(`answer-before-with-empty-${ext}`);
-      const expected = parser.process(answerFile);
+      const parser = new Parser(answerFile);
 
-      expect(gendiff(preparePath(file1), preparePath(empty))).toBe(expected);
+      expect(gendiff(preparePath(file1), preparePath(empty)))
+        .toBe(parser.parse());
     });
 
     it(`${empty} with ${file1}`, () => {
       const answerFile = preparePath(`answer-empty-with-before-${ext}`);
-      const expected = parser.process(answerFile);
+      const parser = new Parser(answerFile);
 
-      expect(gendiff(preparePath(empty), preparePath(file1))).toBe(expected);
+      expect(gendiff(preparePath(empty), preparePath(file1)))
+        .toBe(parser.parse());
     });
 
     it(`${file1} with ${file2}`, () => {
       const answerFile = preparePath(`answer-before-with-after-${ext}`);
-      const expected = parser.process(answerFile);
+      const parser = new Parser(answerFile);
 
-      expect(gendiff(preparePath(file1), preparePath(file2))).toBe(expected);
+      expect(gendiff(preparePath(file1), preparePath(file2)))
+        .toBe(parser.parse());
     });
 
     it(`${file2} with ${file1}`, () => {
       const answerFile = preparePath(`answer-after-with-before-${ext}`);
-      const expected = parser.process(answerFile);
+      const parser = new Parser(answerFile);
 
-      expect(gendiff(preparePath(file2), preparePath(file1))).toBe(expected);
+      expect(gendiff(preparePath(file2), preparePath(file1)))
+        .toBe(parser.parse());
     });
   });
 });
