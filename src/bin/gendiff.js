@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import program from 'commander';
 import gendiff from '..';
+import { version } from '../../package.json';
 
 program
-  .version('1.0.0')
+  .version(version)
   .description('Compares two configuration files and shows a difference.')
   .option('-f, --format [type]', 'Output format')
   .arguments('<firstConfig> <secondConfig>')
