@@ -36,7 +36,8 @@
   "homepage": "https://github.com/aarefiev/project-lvl2-s213#readme",
   "dependencies": {
     "commander": "*",
-    "lodash": "*"
+    "lodash": "*",
+    "js-yaml": "*"
   },
   "devDependencies": {
     "babel-cli": "*",
