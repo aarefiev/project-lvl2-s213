@@ -3,6 +3,7 @@
 import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
+import ini from 'ini';
 
 const parser: {
   data: any,
@@ -11,6 +12,7 @@ const parser: {
   data: {
     json: JSON.parse,
     yaml: yaml.safeLoad,
+    ini: ini.parse,
   },
   process: function process(pathToFile: string) {
     const content = fs.readFileSync(pathToFile, 'utf8');
