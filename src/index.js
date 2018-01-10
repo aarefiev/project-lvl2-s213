@@ -33,10 +33,10 @@ const renderDiff = (obj1, obj2) => {
 export const encoding = 'utf8';
 
 export default (pathToFile1: string, pathToFile2: string) => {
-  const [pathData1, raw1] = [path
-    .parse(pathToFile1), fs.readFileSync(pathToFile1, encoding)];
-  const [pathData2, raw2] = [path
-    .parse(pathToFile2), fs.readFileSync(pathToFile2, encoding)];
+  const file1Ext = path.parse(pathToFile1).ext;
+  const file1Content = fs.readFileSync(pathToFile1, encoding);
+  const file2Ext = path.parse(pathToFile2).ext;
+  const file2Content = fs.readFileSync(pathToFile2, encoding);
 
-  return renderDiff(parse(pathData1.ext, raw1), parse(pathData2.ext, raw2));
+  return renderDiff(parse(file1Ext, file1Content), parse(file2Ext, file2Content));
 };
