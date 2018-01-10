@@ -1,7 +1,9 @@
 // @flow
 
 import _ from 'lodash';
-import Parser from './parser';
+import fs from 'fs';
+import path from 'path';
+import parse from './parser';
 
 const renderDiffForKey = (key, obj1, obj2) => {
   const spaces = (count = 2) => ' '.repeat(count);
@@ -28,9 +30,13 @@ const renderDiff = (obj1, obj2) => {
   return `{\n${formattedResult.join('')}}\n`;
 };
 
-export default (pathToFile1: string, pathToFile2: string) => {
-  const parser1 = new Parser(pathToFile1);
-  const parser2 = new Parser(pathToFile2);
+export const encoding = 'utf8';
 
-  return renderDiff(parser1.parse(), parser2.parse());
+export default (pathToFile1: string, pathToFile2: string) => {
+  const [pathData1, raw1] = [path
+    .parse(pathToFile1), fs.readFileSync(pathToFile1, encoding)];
+  const [pathData2, raw2] = [path
+    .parse(pathToFile2), fs.readFileSync(pathToFile2, encoding)];
+
+  return renderDiff(parse(pathData1.ext, raw1), parse(pathData2.ext, raw2));
 };
