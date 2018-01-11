@@ -5,38 +5,123 @@ import fs from 'fs';
 import path from 'path';
 import parse from './parser';
 
-const renderDiffForKey = (key, obj1, obj2) => {
+const encoding = 'utf8';
+const parseFileToObject = (pathToFile) => {
+  const { ext } = path.parse(pathToFile);
+  const content = fs.readFileSync(pathToFile, encoding);
+
+  return parse(ext, content);
+};
+
+const propertyTypes = [
+  {
+    type: 'nested',
+    check: (key, obj1, obj2) => _.isObject(obj1[key]) && _.isObject(obj2[key]),
+    process: (key, obj1, obj2, func) => func(obj1[key], obj2[key]),
+  },
+  {
+    type: 'unchanged',
+    check: (key, obj1, obj2) =>
+      _.has(obj1, key) && _.has(obj2, key) && obj1[key] === obj2[key],
+    process: (key, obj1) => obj1[key],
+  },
+  {
+    type: 'changed',
+    check: (key, obj1, obj2) =>
+      _.has(obj1, key) && _.has(obj2, key) && obj1[key] !== obj2[key],
+    process: (key, obj1, obj2) => ({ old: obj1[key], new: obj2[key] }),
+  },
+  {
+    type: 'deleted',
+    check: (key, obj1, obj2) => _.has(obj1, key) && !_.has(obj2, key),
+    process: (key, obj1) => obj1[key],
+  },
+  {
+    type: 'added',
+    check: (key, obj1, obj2) => !_.has(obj1, key) && _.has(obj2, key),
+    process: (key, obj1, obj2) => obj2[key],
+  },
+];
+
+const getPropertyAction = (key, obj1, obj2) =>
+  _.find(propertyTypes, ({ check }) => check(key, obj1, obj2));
+
+const prepareAst = (obj1, obj2) => {
+  const keys = _.union(_.keys(obj1), _.keys(obj2));
+
+  return keys.map((key) => {
+    const { type, process } = getPropertyAction(key, obj1, obj2);
+    const value = process(key, obj1, obj2, prepareAst);
+
+    if (_.isObject(value)) {
+      return { type, key, children: value };
+    }
+
+    return { type, key, value };
+  });
+};
+
+const render = (ast) => {
+  const eol = '\n';
   const spaces = (count = 2) => ' '.repeat(count);
+  const processValue = (value, level) => {
+    const addSpaces = level * 4;
 
-  if (_.has(obj1, key) && _.has(obj2, key) && obj1[key] !== obj2[key]) {
-    const addedItem = `${spaces()}+ ${key}: ${obj2[key]}\n`;
-    const removedItem = `${spaces()}- ${key}: ${obj1[key]}\n`;
+    if (!_.isObject(value)) {
+      return value;
+    }
 
-    return [addedItem, removedItem];
-  } else if (!_.has(obj1, key) && _.has(obj2, key)) {
-    return [`${spaces()}+ ${key}: ${obj2[key]}\n`];
-  } else if (_.has(obj1, key) && !_.has(obj2, key)) {
-    return [`${spaces()}- ${key}: ${obj1[key]}\n`];
-  }
+    const result = Object.keys(value).reduce((acc, key) => {
+      let processed;
 
-  return [`${spaces(4)}${key}: ${obj1[key]}\n`];
+      if (_.isObject(value[key])) {
+        processed = processValue(value[key], level + 1);
+      }
+
+      return `${acc}${spaces(4 + addSpaces)}${key}: ${processed || value[key]}${eol}`;
+    }, '');
+
+    return `{${eol}${result}${spaces(addSpaces)}}`;
+  };
+
+  const iter = (tree, level = 0) => {
+    const addSpaces = level * 4;
+
+    const nodeToString = (node) => {
+      const { type, key, value } = node;
+      const { children } = node;
+      const item = children || value;
+
+      if (type === 'nested') {
+        return `${spaces(4 + addSpaces)}${key}: ${iter(children, level + 1)}`;
+      } if (type === 'changed') {
+        const added = `${spaces(2 + addSpaces)}+ ${key}: ${children.new}`;
+        const removed = `${spaces(2 + addSpaces)}- ${key}: ${children.old}`;
+
+        return `${added}${eol}${removed}`;
+      } else if (type === 'deleted') {
+        return `${spaces(2 + addSpaces)}- ${key}: ${processValue(item, level + 1)}`;
+      } else if (type === 'added') {
+        return `${spaces(2 + addSpaces)}+ ${key}: ${processValue(item, level + 1)}`;
+      }
+
+      return `${spaces(4 + addSpaces)}${key}: ${processValue(item, level + 1)}`;
+    };
+
+    const result = tree.reduce((acc, node) =>
+      `${acc}${nodeToString(node)}${eol}`, '');
+
+    return `{${eol}${result}${spaces(addSpaces)}}`;
+  };
+
+  return `${iter(ast)}${eol}`;
 };
-const renderDiff = (obj1, obj2) => {
-  const keys = _.union(Object.keys(obj1), Object.keys(obj2));
 
-  const formattedResult = keys.reduce((acc, key) =>
-    [...acc, ...renderDiffForKey(key, obj1, obj2)], []);
-
-  return `{\n${formattedResult.join('')}}\n`;
-};
-
-export const encoding = 'utf8';
-
+export { encoding };
 export default (pathToFile1: string, pathToFile2: string) => {
-  const file1Ext = path.parse(pathToFile1).ext;
-  const file1Content = fs.readFileSync(pathToFile1, encoding);
-  const file2Ext = path.parse(pathToFile2).ext;
-  const file2Content = fs.readFileSync(pathToFile2, encoding);
+  const obj1 = parseFileToObject(pathToFile1);
+  const obj2 = parseFileToObject(pathToFile2);
+  const ast = prepareAst(obj1, obj2);
 
-  return renderDiff(parse(file1Ext, file1Content), parse(file2Ext, file2Content));
+  return render(ast);
 };
