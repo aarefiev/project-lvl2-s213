@@ -17,104 +17,98 @@ const propertyTypes = [
   {
     type: 'nested',
     check: (key, obj1, obj2) => _.isObject(obj1[key]) && _.isObject(obj2[key]),
-    process: (key, obj1, obj2, func) => func(obj1[key], obj2[key]),
+    process: (key, obj1, obj2, func) =>
+      ({ children: func(obj1[key], obj2[key]) }),
   },
   {
     type: 'unchanged',
     check: (key, obj1, obj2) =>
       _.has(obj1, key) && _.has(obj2, key) && obj1[key] === obj2[key],
-    process: (key, obj1) => obj1[key],
+    process: (key, obj1) => ({ from: obj1[key] }),
   },
   {
     type: 'changed',
     check: (key, obj1, obj2) =>
       _.has(obj1, key) && _.has(obj2, key) && obj1[key] !== obj2[key],
-    process: (key, obj1, obj2) => ({ old: obj1[key], new: obj2[key] }),
+    process: (key, obj1, obj2) => ({ from: obj1[key], to: obj2[key] }),
   },
   {
     type: 'deleted',
     check: (key, obj1, obj2) => _.has(obj1, key) && !_.has(obj2, key),
-    process: (key, obj1) => obj1[key],
+    process: (key, obj1) => ({ from: obj1[key] }),
   },
   {
     type: 'added',
     check: (key, obj1, obj2) => !_.has(obj1, key) && _.has(obj2, key),
-    process: (key, obj1, obj2) => obj2[key],
+    process: (key, obj1, obj2) => ({ to: obj2[key] }),
   },
 ];
-
-const getPropertyAction = (key, obj1, obj2) =>
-  _.find(propertyTypes, ({ check }) => check(key, obj1, obj2));
 
 const prepareAst = (obj1, obj2) => {
   const keys = _.union(_.keys(obj1), _.keys(obj2));
 
   return keys.map((key) => {
-    const { type, process } = getPropertyAction(key, obj1, obj2);
-    const value = process(key, obj1, obj2, prepareAst);
+    const { type, process } = _.find(propertyTypes, ({ check }) =>
+      check(key, obj1, obj2));
+    const { from, to, children } = process(key, obj1, obj2, prepareAst);
 
-    if (_.isObject(value)) {
-      return { type, key, children: value };
-    }
-
-    return { type, key, value };
+    return {
+      type, key, from, to, children,
+    };
   });
 };
 
-const render = (ast) => {
-  const eol = '\n';
-  const spaces = (count = 2) => ' '.repeat(count);
-  const processValue = (value, level) => {
-    const addSpaces = level * 4;
+const addSpaces = (count = 4) => ' '.repeat(count);
+const processNodeWithObjectValue = (key, value, prefix, level) => {
+  const prefixSpaces = `${addSpaces(4 * level)}  `;
 
-    if (!_.isObject(value)) {
-      return value;
+  const processed = _.flatten(Object.keys(value).map((iterKey) => {
+    const iterPrefix = `${addSpaces()}  `;
+
+    if (_.isObject(value[iterKey])) {
+      return processNodeWithObjectValue(iterKey, value[iterKey], '  ', level + 1);
     }
 
-    const result = Object.keys(value).reduce((acc, key) => {
-      let processed;
+    return `${prefixSpaces}${iterPrefix}${iterKey}: ${value[iterKey]}`;
+  }));
 
-      if (_.isObject(value[key])) {
-        processed = processValue(value[key], level + 1);
-      }
+  return [`${prefixSpaces}${prefix}${key}: {`, ...processed, `${prefixSpaces}  }`];
+};
+const processNode = (key, value, prefix, level) => {
+  const prefixSpaces = `${addSpaces(4 * level)}  `;
 
-      return `${acc}${spaces(4 + addSpaces)}${key}: ${processed || value[key]}${eol}`;
-    }, '');
+  if (_.isObject(value)) {
+    return processNodeWithObjectValue(key, value, prefix, level);
+  }
 
-    return `{${eol}${result}${spaces(addSpaces)}}`;
-  };
+  return [`${prefixSpaces}${prefix}${key}: ${value}`];
+};
 
-  const iter = (tree, level = 0) => {
-    const addSpaces = level * 4;
+const nodeProcessersList = {
+  nested: (n, level, func) => {
+    const prefix = `${addSpaces(4 * level)}${addSpaces()}`;
+    const renderedChilds = func(n.children, level + 1);
 
-    const nodeToString = (node) => {
-      const { type, key, value } = node;
-      const { children } = node;
-      const item = children || value;
+    return `${prefix}${n.key}: ${renderedChilds}`;
+  },
+  unchanged: (n, level) => processNode(n.key, n.from, '  ', level),
+  changed: (n, level) => {
+    const addedNode = processNode(n.key, n.to, '+ ', level);
+    const deletedNode = processNode(n.key, n.from, '- ', level);
 
-      if (type === 'nested') {
-        return `${spaces(4 + addSpaces)}${key}: ${iter(children, level + 1)}`;
-      } if (type === 'changed') {
-        const added = `${spaces(2 + addSpaces)}+ ${key}: ${children.new}`;
-        const removed = `${spaces(2 + addSpaces)}- ${key}: ${children.old}`;
+    return [addedNode, deletedNode];
+  },
+  deleted: (n, level) => processNode(n.key, n.from, '- ', level),
+  added: (n, level) => processNode(n.key, n.to, '+ ', level),
+};
 
-        return `${added}${eol}${removed}`;
-      } else if (type === 'deleted') {
-        return `${spaces(2 + addSpaces)}- ${key}: ${processValue(item, level + 1)}`;
-      } else if (type === 'added') {
-        return `${spaces(2 + addSpaces)}+ ${key}: ${processValue(item, level + 1)}`;
-      }
+const render = (ast, level = 0) => {
+  const processed = _.flatten(ast.map(n =>
+    nodeProcessersList[n.type](n, level, render)));
+  const prefix = '{';
+  const postfix = `${addSpaces(4 * level)}}`;
 
-      return `${spaces(4 + addSpaces)}${key}: ${processValue(item, level + 1)}`;
-    };
-
-    const result = tree.reduce((acc, node) =>
-      `${acc}${nodeToString(node)}${eol}`, '');
-
-    return `{${eol}${result}${spaces(addSpaces)}}`;
-  };
-
-  return `${iter(ast)}${eol}`;
+  return [prefix, ...processed, postfix].join('\n');
 };
 
 export { encoding };
@@ -123,5 +117,5 @@ export default (pathToFile1: string, pathToFile2: string) => {
   const obj2 = parseFileToObject(pathToFile2);
   const ast = prepareAst(obj1, obj2);
 
-  return render(ast);
+  return `${render(ast)}\n`;
 };
