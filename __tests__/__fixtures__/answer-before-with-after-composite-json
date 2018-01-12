@@ -1,0 +1,59 @@
+{
+  "common": {
+    "setting1": {
+      "type": "unchanged",
+      "from": "Value 1"
+    },
+    "setting2": {
+      "type": "deleted",
+      "from": "200"
+    },
+    "setting3": {
+      "type": "unchanged",
+      "from": true
+    },
+    "setting6": {
+      "key": {
+        "type": "unchanged",
+        "from": "value"
+      },
+      "ops": {
+        "type": "added",
+        "to": "vops"
+      }
+    },
+    "setting4": {
+      "type": "added",
+      "to": "blah blah"
+    },
+    "setting5": {
+      "type": "added",
+      "to": {
+        "key5": "value5"
+      }
+    }
+  },
+  "group1": {
+    "baz": {
+      "type": "changed",
+      "from": "bas",
+      "to": "bars"
+    },
+    "foo": {
+      "type": "unchanged",
+      "from": "bar"
+    }
+  },
+  "group2": {
+    "type": "deleted",
+    "from": {
+      "abc": "12345"
+    }
+  },
+  "group3": {
+    "type": "added",
+    "to": {
+      "fee": "100500"
+    }
+  }
+}

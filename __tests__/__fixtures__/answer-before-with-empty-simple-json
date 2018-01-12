@@ -1,0 +1,14 @@
+{
+  "host": {
+    "type": "deleted",
+    "from": "hexlet.io"
+  },
+  "timeout": {
+    "type": "deleted",
+    "from": 50
+  },
+  "proxy": {
+    "type": "deleted",
+    "from": "123.234.53.22"
+  }
+}

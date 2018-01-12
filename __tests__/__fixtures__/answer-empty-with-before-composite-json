@@ -1,0 +1,26 @@
+{
+  "common": {
+    "type": "added",
+    "to": {
+      "setting1": "Value 1",
+      "setting2": "200",
+      "setting3": true,
+      "setting6": {
+        "key": "value"
+      }
+    }
+  },
+  "group1": {
+    "type": "added",
+    "to": {
+      "baz": "bas",
+      "foo": "bar"
+    }
+  },
+  "group2": {
+    "type": "added",
+    "to": {
+      "abc": "12345"
+    }
+  }
+}

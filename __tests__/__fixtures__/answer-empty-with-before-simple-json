@@ -1,0 +1,14 @@
+{
+  "host": {
+    "type": "added",
+    "to": "hexlet.io"
+  },
+  "timeout": {
+    "type": "added",
+    "to": 50
+  },
+  "proxy": {
+    "type": "added",
+    "to": "123.234.53.22"
+  }
+}

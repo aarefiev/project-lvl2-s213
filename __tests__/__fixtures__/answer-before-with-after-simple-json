@@ -1,0 +1,19 @@
+{
+  "host": {
+    "type": "unchanged",
+    "from": "hexlet.io"
+  },
+  "timeout": {
+    "type": "changed",
+    "from": 50,
+    "to": 20
+  },
+  "proxy": {
+    "type": "deleted",
+    "from": "123.234.53.22"
+  },
+  "verbose": {
+    "type": "added",
+    "to": true
+  }
+}

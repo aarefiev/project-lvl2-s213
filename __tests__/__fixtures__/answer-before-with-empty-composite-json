@@ -1,0 +1,26 @@
+{
+  "common": {
+    "type": "deleted",
+    "from": {
+      "setting1": "Value 1",
+      "setting2": "200",
+      "setting3": true,
+      "setting6": {
+        "key": "value"
+      }
+    }
+  },
+  "group1": {
+    "type": "deleted",
+    "from": {
+      "baz": "bas",
+      "foo": "bar"
+    }
+  },
+  "group2": {
+    "type": "deleted",
+    "from": {
+      "abc": "12345"
+    }
+  }
+}

@@ -4,7 +4,7 @@ import fs from 'fs';
 import gendiff from '../src';
 
 const preparePath = file => `./__tests__/__fixtures__/${file}`;
-const diffContentsFormatsList = ['plain', 'tree'];
+const diffContentsFormatsList = ['json', 'plain', 'tree'];
 const fileContentsTypesList = ['simple', 'composite'];
 const fileExtensionsList = ['.json', '.yaml', '.ini'];
 
