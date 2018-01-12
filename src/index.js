@@ -105,13 +105,10 @@ const nodeProcessersList = {
 const render = (ast, level = 0) => {
   const processed = _.flatten(ast.map(n =>
     nodeProcessersList[n.type](n, level, render)));
-  const prefix = '{';
-  const postfix = `${addSpaces(4 * level)}}`;
 
-  return [prefix, ...processed, postfix].join('\n');
+  return ['{', ...processed, `${addSpaces(4 * level)}}`].join('\n');
 };
 
-export { encoding };
 export default (pathToFile1: string, pathToFile2: string) => {
   const obj1 = parseFileToObject(pathToFile1);
   const obj2 = parseFileToObject(pathToFile2);
